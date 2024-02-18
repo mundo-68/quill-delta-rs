@@ -12,26 +12,38 @@ use crate::iterator::DeltaIterator;
 use crate::operations::{DeltaOperation, OpType};
 
 pub trait OpTransform {
-    /// # Errors
+    /// # compose()
     ///
     /// Returns a Delta that is equivalent to applying the operations of own Delta,
     /// followed by another Delta.
     ///
     /// `other` - Delta to compose
+    /// # Errors
     fn compose(&self, other: &Delta) -> Result<Delta, Error>;
 
-    /// # Errors
+    /// # transform()
+    ///
     /// Transform given Delta against own operations.
-    /// `other` - Delta to transform
-    /// `priority` - Boolean used to break ties. If `true`, then `this` takes priority over `other`, that is, its
+    ///
+    /// Input:
+    ///  - `other` - Delta to transform
+    ///  - `priority` - Boolean used to break ties.
+    ///
+    /// If priority is  `true`, then `this` takes priority over `other`, that is, its
     /// actions are considered to happened "first".
+    ///
+    /// # Errors
     fn transform(&self, other: &Delta, priority: bool) -> Result<Delta, Error>;
 
-    /// # Errors
+    /// # transform_position()
     ///
     /// Transform an index against the quill delta.
+    ///
     /// Useful for representing cursor/selection positions.
+    ///
     /// `index` - index to transform
+    ///
+    /// # Errors
     fn transform_position(&self, index: usize, priority: bool) -> Result<usize, Error>;
 }
 

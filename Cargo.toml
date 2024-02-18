@@ -6,7 +6,10 @@ license = "MIT/Apache-2.0"
 keywords = ["editor", "web", "delta"]
 readme = "README.md"
 repository = "https://github.com/mundo-68/quill-delta-rs"
+homepage = "https://github.com/mundo-68/quill-delta-rs"
+documentation = ""
 edition = "2021"
+desciption = "A Rust re-implementation of the Quill Delta document format."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

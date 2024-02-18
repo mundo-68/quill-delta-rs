@@ -13,21 +13,18 @@ use serde_derive::{Deserialize, Serialize};
 #[cfg(test)]
 use std::fmt::{Display, Formatter};
 
-/// Deltas are a simple, yet expressive format that can be used to describe contents and changes.
-/// The format is JSON based, and is human readable, yet easily parsible by machines.
-/// Deltas can describe any rich text document, includes all text and formatting information,
-/// without the ambiguity and complexity of HTML.
-///
-/// A Delta is made up of an Array of Operations, which describe changes to a document.
-/// They can be an insert, delete or retain. Note operations do not take an index.
-/// They always describe the change at the current index. Use retains to "keep" or "skip" certain
-/// parts of the document.
-///
-/// Don’t be confused by its name Delta—Deltas represents both documents and changes to documents.
-/// If you think of Deltas as the instructions from going from one document to another,
-/// the way Deltas represent a document is by expressing the instructions starting from
-/// an empty document.
+// https://github.com/maximkornilov/types-quill-delta/blob/master/index.d.ts
+// https://github.com/quilljs/delta#insert-operation
 
+/// # Delta
+///
+/// Delta represents a document or a modification of a document as a sequence of
+///  insert, delete and retain operations.
+///
+///  Delta consisting of only "insert" operations is usually referred to as
+///  "document delta". When delta includes also "retain" or "delete" operations
+///  it is a "change delta".
+///
 /// Wrapper to manipulate Delta easily
 /// ```
 /// extern crate delta;
@@ -44,16 +41,6 @@ use std::fmt::{Display, Formatter};
 ///         DeltaOperation::insert("Hallo World")
 ///     ].into();
 /// ```
-///
-/// Delta represents a document or a modification of a document as a sequence of
-///  insert, delete and retain operations.
-///
-///  Delta consisting of only "insert" operations is usually referred to as
-///  "document delta". When delta includes also "retain" or "delete" operations
-///  it is a "change delta".
-///
-// https://github.com/maximkornilov/types-quill-delta/blob/master/index.d.ts
-// https://github.com/quilljs/delta#insert-operation
 #[derive(Clone, Default, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Delta {
     //#[serde(flatten)]
@@ -79,6 +66,9 @@ impl Delta {
         self
     }
 
+    /// # insert()
+    ///
+    /// Insert operation to insert only a value without attributes.
     pub fn insert<S: Into<OpsVal>>(&mut self, value: S) {
         let op = DeltaOperation::insert(value);
         if op.op_len() == 0 {
@@ -87,6 +77,9 @@ impl Delta {
         self.push(op);
     }
 
+    /// # insert_attr()
+    ///
+    /// Insert operation to insert a value with attributes.
     pub fn insert_attr<S: Into<OpsVal>>(&mut self, value: S, attributes: Attributes) {
         let mut op = DeltaOperation::insert(value);
         if op.op_len() == 0 {
@@ -96,6 +89,9 @@ impl Delta {
         self.push(op);
     }
 
+    /// # retain()
+    ///
+    /// Insert operation to retain only a retain length without attributes.
     pub fn retain(&mut self, length: usize) {
         if length == 0 {
             return;
@@ -103,6 +99,9 @@ impl Delta {
         self.push(DeltaOperation::retain(length));
     }
 
+    /// # retain_attr()
+    ///
+    /// Insert operation to retain a retain length with attributes.
     pub fn retain_attr(&mut self, length: usize, attributes: Attributes) {
         if length == 0 {
             return;
@@ -112,6 +111,9 @@ impl Delta {
         self.push(op);
     }
 
+    /// # delete()
+    ///
+    /// Insert operation to delete a delete length.
     pub fn delete(&mut self, length: usize) {
         if length == 0 {
             return;
@@ -119,16 +121,20 @@ impl Delta {
         self.push(DeltaOperation::delete(length));
     }
 
+    /// # push()
     ///
-    ///Private function to add one operation to the end of the vector
+    /// Private function to add one operation to the end of the operations vector
     ///
-    /// Pushes new operation into this delta.
+    /// Performs `compaction` by composing [operation] with current tail operation
+    /// of this delta, when possible.
     ///
-    /// Performs compaction by composing [operation] with current tail operation
-    /// of this delta, when possible. For instance, if current tail is
-    /// `insert('abc')` and pushed operation is `insert('123')` then existing
-    /// tail is replaced with `insert('abc123')` - a compound result of the two
-    /// operations.
+    /// For instance, if current tail is <br>
+    /// `insert('abc')` <br>
+    /// and pushed operation is <br>
+    /// `insert('123')` <br>
+    /// then existing tail is replaced with <br>
+    /// `insert('abc123')` <br>
+    /// which is a compound result of the two operations.
     pub fn push(&mut self, new_op: DeltaOperation) {
         let Some(last_op) = self.ops.pop() else {
             self.ops.push(new_op);
@@ -202,12 +208,18 @@ impl Delta {
         self.ops.push(new_op);
     }
 
+    /// # append()
+    ///
+    /// Appends a delta to the current delta document.
     pub fn append(&mut self, mut delta: Delta) {
         let first = delta.ops.remove(0);
         self.push(first);
         self.ops.append(&mut delta.ops);
     }
 
+    /// # append_delta_operation()
+    ///
+    /// Appends a single delta operation to the current delta document.
     pub(crate) fn append_delta_operation(&mut self, mut other: Vec<DeltaOperation>) -> &mut Delta {
         if !other.is_empty() {
             self.push(other.remove(0)); //merges repeated retain, delete, insert
@@ -216,10 +228,16 @@ impl Delta {
         self
     }
 
+    /// # get_ops()
+    ///
+    /// Converts a Delta document in to a vector of Delta operations
     pub fn get_ops(self) -> Vec<DeltaOperation> {
         self.ops
     }
 
+    /// # get_ops_ref()
+    ///
+    /// Returns a reference to a vector of Delta operations for the Delta document
     pub fn get_ops_ref(&self) -> &Vec<DeltaOperation> {
         &self.ops
     }

@@ -10,16 +10,19 @@ use crate::operations::{DeltaOperation, OpType};
 use std::cell::Cell;
 use std::option::Option;
 
-//
-// Iterator iterating over the content IN the DeltaOperations.
-// Hence we do not only iterate over the Objects of type DeltaOperation,
-// but also inside. Hence we have 2 indexes: Index pointing to a
-// DeltaOperation; and offset pointing to a position inside the DeltaOperation.
-//
-// The iterator has an index. This index may have values
-//         0 --> first
-//         any --> some value in the array
-//         usize::MAX --> end of the list reached
+/// # DeltaIterator
+///
+/// Iterator iterating over the content IN the DeltaOperations.
+///
+/// Hence we do not only iterate over the Objects of type DeltaOperation,
+/// but also inside. There are 2 indexes:
+///  - index pointing to a DeltaOperation;
+///  - offset pointing to a position inside the DeltaOperation.
+///
+/// For input values, the index may have values
+///  - 0 --> first
+///  - any usize --> some value in the array
+///  - usize::MAX --> end of the list reached
 #[allow(clippy::module_name_repetitions)]
 pub struct DeltaIterator<'a> {
     ops: &'a Vec<DeltaOperation>, //private list of elements to iterate over
@@ -40,9 +43,13 @@ impl<'a> DeltaIterator<'a> {
         self.peek_len() < usize::MAX
     }
 
+    /// # peek()
+    ///
+    /// Returns the delta operation that is next in line to be processed.
+    /// But does NOT advance to the next operation.
+    ///
     /// # Panics
     /// when internal index offset or index values are wrong
-    ///
     // Returns the next DeltaOperation
     pub fn peek(&self) -> Option<&DeltaOperation> {
         if self.ops.len() > self.index.get() {
@@ -51,6 +58,11 @@ impl<'a> DeltaIterator<'a> {
         None
     }
 
+    /// # next()
+    ///
+    /// Returns the next operation, and advances the index to the
+    /// next operation.
+    ///
     /// # Panics
     /// when internal index offset or index values are wrong
     ///
@@ -64,14 +76,16 @@ impl<'a> DeltaIterator<'a> {
         }
     }
 
+    /// # peek_len()
+    ///
+    /// Assuming we are on an offset o in an DeltaOperation on Delta operation index i.<br>
+    /// We return the remaining length of the Delta operation we point to:
+    ///     op[i].len - offset
+    ///
+    /// It should never return 0 if our index is being managed correctly
+    ///
     /// # Panics
     /// when internal index offset or index values are wrong
-    ///
-    // Assuming we are on an offset o in an DeltaOperation on index i
-    // we return the remaining length of the Delta operation:
-    //     op[i].len - offset
-    //
-    // It should never return 0 if our index is being managed correctly
     pub fn peek_len(&self) -> usize {
         if self.ops.len() > self.index.get() {
             self.ops.get(self.index.get()).unwrap().op_len() - self.offset.get()
@@ -80,6 +94,9 @@ impl<'a> DeltaIterator<'a> {
         }
     }
 
+    /// # peek_type()
+    ///
+    /// Returns the `OpType` of the next operation without advancing the index.
     /// # Panics
     /// when internal index offset or index values are wrong
     ///
@@ -92,15 +109,17 @@ impl<'a> DeltaIterator<'a> {
         }
     }
 
+    /// # next_len()
+    ///
+    /// Returns the next DeltaOperation or a slice thereof
+    /// depending on the length of the input parameter len:
+    ///
+    ///  - If len == 0 the next operation is returned
+    ///  - If len > 0 the next operation is returned, or a slice
+    ///  - If len takes us past the current DeltaOperation Length, we get the remainder of the DeltaOperation
+    ///
     /// # Panics
     /// when internal index offset or index values are wrong
-    ///
-    // If len == 0 the next operation is returned
-    // If len > 0 the next operation is returned, or a slice
-    // If len takes us past the current DeltaOperation Length
-    //     --> we get the remainder of the DeltaOperation
-    //
-    // Returns the next DeltaOperation or a slice thereof
     pub fn next_len(&self, len: usize) -> DeltaOperation {
         let mut length = len;
         if length == 0 {
@@ -155,9 +174,12 @@ impl<'a> DeltaIterator<'a> {
         DeltaOperation::retain(usize::MAX)
     }
 
-    // returns the remainder of the operations stack
-    // to which the iterator points
-    // Leaves the current values for offset and index unchanged
+    /// # rest()
+    ///
+    /// Returns the remainder of the operations stack
+    /// to which the iterator points
+    ///
+    /// Leaves the current values for offset and index unchanged
     pub fn rest(&self) -> Vec<DeltaOperation> {
         if !self.has_next() {
             return Vec::new();

@@ -17,11 +17,28 @@ use std::borrow::{Borrow, BorrowMut};
 #[cfg(test)]
 use std::fmt::{Display, Formatter};
 
+
+/// Operations may have the same structure as an attribute value
+/// As a result the `OpsMap` is identical to the `AttrMap` too,
+pub type OpsVal = AttrVal;
+pub type OpsMap = AttrMap;
+
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
+pub enum OpType {
+    Delete,
+    Retain,
+    Insert,
+}
+
+/// # DeltaOperation()
+///
 /// Operation definition for the delta format in Rust.
 ///
+/// Insert text:
+/// ```json
 /// Insert a bolded "Text"
 /// { insert: "Text", attributes: { bold: true } }
-///
+/// ```
 ///  Insert a link
 /// ```json
 /// { insert: "Google", attributes: { link: 'https:///www.google.com' } }
@@ -44,19 +61,6 @@ use std::fmt::{Display, Formatter};
 ///   }
 /// }
 /// ```
-
-/// Operations may have the same structure as an attribute value
-/// As a result the `OpsMap` is identical to the `AttrMap` too,
-pub type OpsVal = AttrVal;
-pub type OpsMap = AttrMap;
-
-#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
-pub enum OpType {
-    Delete,
-    Retain,
-    Insert,
-}
-
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct DeltaOperation {
     #[serde(flatten)]
@@ -102,8 +106,9 @@ impl DeltaOperation {
         }
     }
 
+    /// # add_attr()
     /// set the attribute in a shorthand way
-    /// ```
+    /// ```rust
     /// use crate::delta::operations::DeltaOperation;
     /// let mut op = DeltaOperation::insert("Hallo");
     ///  op.add_attr("font", "green");
@@ -113,13 +118,16 @@ impl DeltaOperation {
         self.attributes.insert(key.into(), value.into());
     }
 
+    /// # set_attributes()
     /// set multiple attributes at once
     pub fn set_attributes<V: Into<Attributes>>(&mut self, values: V) {
         self.attributes = values.into();
     }
 
-    // An object is an image or other thing, we treat it as having length 1
-    // In those cases tine insert value is NOT a string.
+    /// # op_len()
+    ///
+    /// An object is an image or other thing, we treat it as having length 1
+    /// In those cases tine insert value is NOT a string.
     pub fn op_len(&self) -> usize {
         match self.kind {
             OpKind::Delete(len) | OpKind::Retain(len) => len,
@@ -128,6 +136,8 @@ impl DeltaOperation {
         }
     }
 
+    /// # op_type()
+    ///
     /// set the attribute in a shorthand way
     pub fn op_type(&self) -> OpType {
         match self.kind {
@@ -137,8 +147,11 @@ impl DeltaOperation {
         }
     }
 
-    /// # Panics
+    /// # insert_value()
+    ///
     /// returns the serde value of the insert operation
+    ///
+    /// # Panics
     pub fn insert_value(&self) -> &OpsVal {
         if let OpKind::Insert(val) = &self.kind {
             return val;
@@ -146,14 +159,22 @@ impl DeltaOperation {
         panic!("Hey no value found in this operation");
     }
 
+    /// # set_op_kind()
+    ///
+    /// Sets the operation kind for this delta operation.
     pub fn set_op_kind(&mut self, s: OpKind) {
         *self.kind.borrow_mut() = s;
     }
 
+    /// remove_attribute()
+    ///
+    /// Removes the attribute that is associated with the given key value.
     pub fn remove_attribute(&mut self, key: &str) {
         self.attributes.remove(key);
     }
 
+    /// # string_val()
+    ///
     /// a shorthand way to get the string value out of the serde value
     pub(crate) fn string_val(&self) -> Result<&str, Error> {
         if let OpKind::Insert(OpsVal::String(val)) = &self.kind {
@@ -205,11 +226,21 @@ impl DeltaOperation {
         false
     }
 
+    /// # is_equal()
+    ///
+    /// Two delta operations are considered equal if both the operation, and the attributes have the same values.
+    /// That means that:
+    /// ```
+    /// use delta::operations::DeltaOperation;
+    /// let a = DeltaOperation::insert("hello");
+    /// let b = a.clone();
+    /// assert!(a.is_equal(&b)); // should pass
+    /// ```
     pub fn is_equal(&self, other: &DeltaOperation) -> bool {
         self.is_same_operation(other) && self.is_same_attributes(other)
     }
 
-    ///
+    /// # is_empty()
     /// Returns true when the operation has zero length
     pub fn is_empty(&self) -> bool {
         self.op_len() == 0

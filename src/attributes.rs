@@ -13,6 +13,11 @@ use std::iter::Iterator;
 use std::ops::{Deref, DerefMut};
 
 use crate::types::attr_val::AttrVal;
+
+
+/// Attributes hold a list of properties that determine an insert-value should be formatted.
+/// When creating a delta diff(), or similar, the attribute may also get the value `Attr_val::Null'
+/// indicating that the attribute should be removed when the `diff` is applied.
 #[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize)]
 pub struct Attributes {
     #[serde(flatten)]
@@ -20,16 +25,23 @@ pub struct Attributes {
 }
 
 impl Attributes {
+    /// # is_equal()
+    ///
+    /// Returns tue when 2 attribute structures contain the identical content.
     pub fn is_equal(&self, other: &Attributes) -> bool {
         diff(other, self).is_empty()
     }
 
+    /// # insert()
+    ///
+    /// Insert a value for a given key into the attributes
     pub fn insert<K: Into<String>, V: Into<AttrVal>>(&mut self, key: K, value: V) {
         self.attr.insert(key.into(), value.into());
     }
 
-    /// Normally derive trait would capture this;
-    /// We need to be explicit here to allow this to be used in `operations`
+    /// # is_empty()
+    ///
+    /// Returns tue when there is no content in the attributes.
     pub fn is_empty(&self) -> bool {
         self.attr.is_empty()
     }
@@ -49,17 +61,18 @@ impl DerefMut for Attributes {
     }
 }
 
-/// # Panics
-/// compose()
+/// # Compose()
 ///
 /// Returns a Delta that is equivalent to applying the operations of
 /// own Delta, followed by another Delta.
-/// 1) If null values should be removed, remove them from the base
+/// 1) if `Attr_val::null` values should be removed, remove them from the base
 /// 2) if the base does NOT contain the key from the delta then we add it to base
-///    regardless if the delta value is "null" or a string, or a JSON object
+///    regardless if the delta value is "null" or a string, or a Attr_val::MAP
 ///
-/// base: base delta
-/// attrib: delta to apply
+/// Param:
+///  - base: base delta
+///  - attrib: delta to apply
+/// # Panics
 ///
 pub fn compose(attrib: &Attributes, base: &Attributes, keep_null: bool) -> Attributes {
     let mut ret = base.clone();
@@ -81,43 +94,40 @@ pub fn compose(attrib: &Attributes, base: &Attributes, keep_null: bool) -> Attri
     ret
 }
 
+/// # transform()
+///
+/// Transform given Delta attribute set against another attribute set.
+///
+/// Parameters:
+///  - base - Delta attributes to transform
+///  - attrib - Diff to apply
+///
+/// priority - Boolean used to break ties:<br>
+/// If true, then base `takes` priority over `attrib`, that is, its actions
+/// are considered to happen "first."
+///
+/// Returns:
+///  - Delta - transformed Delta
+///
 /// # Panics
-///
-/// transform()
-///
-/// Transform given Delta against own operations.
-///
-/// Methods
-/// transform(other, priority = false)
-/// transform(index, priority = false) - Alias for transformPosition
-///
-/// Parameters
-/// base
-/// other - Delta to transform
-/// priority - Boolean used to break ties.
-///         If true, then this takes priority over other, that is, its actions
-///         are considered to happen "first."
-/// Returns
-///    Delta - transformed Delta
-///
-pub fn transform(a: &Attributes, b: &Attributes, priority: bool) -> Attributes {
-    if a.is_empty() {
-        return b.clone();
+pub fn transform(attrib: &Attributes, base: &Attributes, priority: bool) -> Attributes {
+    if attrib.is_empty() {
+        return base.clone();
     };
-    if b.is_empty() {
+    if base.is_empty() {
         return Attributes::default();
     };
 
     if !priority {
         // b simply overwrites us without priority
-        return b.clone();
+        return base.clone();
     }
 
     //Fixme: saves a potential panic by not using .unwrap()
     //Fixme: But which implementation is faster ...
     let mut ret = Attributes::default();
-    for (key, val) in &**b {
-        if a.get(key).is_none() {
+    for (key, val) in &**base {
+        if attrib.get(key).is_none() {
             ret.insert(key, val.clone());
         }
     }
@@ -128,17 +138,11 @@ pub fn transform(a: &Attributes, b: &Attributes, priority: bool) -> Attributes {
     ret
 }
 
-/// diff()
+/// # diff()
 ///
-/// Returns a Delta representing the difference between two documents.
-///
-/// Parameters
-///   other - Document Delta to diff against
-///   index - Suggested index where change took place
-/// Returns Delta - difference between the two documents
-///   base: first quill delta
-///   attrib: second quill delta
-///
+/// Returns Delta - difference between the two attribute sets
+///  - base: first quill delta
+///  - attrib: second quill delta
 pub fn diff(attrib: &Attributes, base: &Attributes) -> Attributes {
     let mut ret = Attributes::default();
     attrib.keys().chain(base.keys()).for_each(|key| {
@@ -156,14 +160,15 @@ pub fn diff(attrib: &Attributes, base: &Attributes) -> Attributes {
     ret
 }
 
-/// # Panics
-/// invert()
+/// # invert()
 ///
 /// Returned an inverted quill delta that has the opposite effect of against
 /// a base document quill delta.
-/// That is `base.compose(quill_delta-rs).compose(inverted) === base`.
 ///
-///invert(r#"{"bold": null}"#, r#"{"bold": true}"#), r#"{"bold": true}"#)
+/// That is:<br>
+/// `base.compose(quill_delta-rs).compose(inverted) === base`.
+///
+/// # Panics
 pub fn invert(attr: &Attributes, base: &Attributes) -> Attributes {
     let mut base_inverted = Attributes::default();
     //Fixme: saves a potential panic by not using .unwrap()

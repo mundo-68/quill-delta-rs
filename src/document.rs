@@ -17,8 +17,12 @@ use diffs::{myers, Diff, Replace};
 
 /// These methods called on or with non-document Deltas will result in undefined behavior.
 pub trait Document {
+
+    /// # concat()
+    ///
     /// Returns a Delta representing the concatenation of
     /// this and another document Delta's operations.
+    ///
     /// ```
     /// extern crate delta;
     /// use delta::delta::Delta;
@@ -42,6 +46,8 @@ pub trait Document {
     /// ```
     fn concat(&mut self, other: Delta) -> &mut Delta;
 
+    /// # diff()
+    ///
     /// Returns a Delta representing the difference between two documents.
     /// Optionally, accepts a suggested index where change took place, often
     /// representing a cursor position before change.
@@ -61,44 +67,67 @@ pub trait Document {
     /// ```
     ///
     /// # Errors
-    /// `ErrorDelta::NotADocument` --> if `other` is not a document (i.e. contains other operations than Insert)
+    ///
+    /// `ErrorDelta::NotADocument`: if `other` is not a document (i.e. contains other operations than Insert)
     fn diff(&self, other: &Delta, _cursor: usize) -> Result<Delta, Error>;
 
-    /// # Errors
+    /// # each_line()
     ///
-    /// run for each line in the text a method --> not that the line length
-    /// is defined by a line brake character --> normally '\n'
+    /// run for each line in the text a method. A line is defined by
+    /// line brake character: '\n'
+    ///
     /// Lines are processed until the predicate returns false as output.
     ///
-    /// This method is expected to run on aa document. So we bail out when
+    /// This method is expected to run on a `document`. So we bail out when
     /// we first encounter a non insert character.
     ///
     /// With closure Fn(&Delta, Attributes, usize) -> bool
-    ///     Delta containing the line
-    ///     Attribute at the end of line character (might be a separate DeltaOperation)
-    ///     integer with the line number
+    ///  - Delta: document to apply
+    ///  - Attribute: at the end of line character (might be a separate DeltaOperation)
+    ///  - integer with the line number
+    /// # Errors
     fn each_line<F>(&self, predicate: F, new_line_char: Option<char>) -> Result<(), Error>
     where
         F: Fn(&Delta, &Attributes, usize) -> bool;
 
+    /// # invert()
+    ///
     /// Returns an inverted delta that has the opposite effect of against a base document delta.
-    /// That is base.compose(delta).compose(inverted) === base.
+    /// That is:<br>
+    /// `base.compose(delta).compose(inverted) === base`.
     ///
     /// Example
+    /// ```
+    /// use delta::attributes::Attributes;
+    /// use delta::delta::{Delta, Document};
+    /// let mut base = Delta::default();
+    /// base.insert("Hello\n");
+    /// base.insert("World");
     ///
-    /// const base = new Delta().insert('Hello\n')
-    ///                         .insert('World');
-    /// const delta = new Delta().retain(6, { bold: true }).insert('!').delete(5);
+    /// let mut delta = Delta::default();
+    /// let mut attr = Attributes::default();
+    /// attr.insert("bold", true);
+    /// delta.retain_attr(6, attr);
+    /// delta.insert("!");
+    /// delta.delete(5);
+    /// let inverted = delta.invert(&base);
     ///
-    /// const inverted = delta.invert(base);  // { ops: [
-    ///                                       //   { retain: 6, attributes: { bold: null } },
-    ///                                       //   { insert: 'World' },
-    ///                                       //   { delete: 1 }
-    ///                                       // ]}
-    ///                                       // base.compose(delta).compose(inverted) === base
+    ///
+    /// ```
+    /// This renders:
+    /// ```text
+    /// { ops: [
+    ///    { retain: 6, attributes: { bold: null } },
+    ///    { insert: 'World' },
+    ///    { delete: 1 }
+    /// ]}
+    /// ```
+    ///  base.compose(delta).compose(inverted) === base
     fn invert(&self, base: &Delta) -> Delta;
 
-    /// Length of content in this delta
+    /// # document_length()
+    ///
+    /// Length of all insert values in this delta document.
     fn document_length(&self) -> usize;
 }
 
