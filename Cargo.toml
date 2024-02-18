@@ -7,7 +7,7 @@ keywords = ["editor", "web", "delta"]
 readme = "README.md"
 repository = "https://github.com/mundo-68/quill-delta-rs"
 homepage = "https://github.com/mundo-68/quill-delta-rs"
-documentation = ""
+documentation = "https://mundo-68.github.io/quill-delta-rs"
 edition = "2021"
 desciption = "A Rust re-implementation of the Quill Delta document format."
 
