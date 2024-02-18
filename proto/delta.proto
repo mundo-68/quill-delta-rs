@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+package grpc_delta;
+
+enum OpKind {
+  insert = 0;
+  retain = 1;
+  delete  = 2;
+}
+
+message Value {
+  oneof val {
+    string str_val = 2;
+    int32  num_val = 3;
+    google.protobuf.Empty  null = 4;
+  }
+}
+
+message MapElement {
+
+}
+
+message OpVal {
+  oneof val {
+    string str_val = 2;
+    int32  num_val = 3;
+    google.protobuf.Empty  null_val = 4;
+    map<string, Value> map_val = 5;
+  }
+}
+
+message Attribute {
+
+}
+
+message Operation {
+  OpKind op_kind = 1;
+
+}
+
+
+
+
+
+    #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+    pub(crate) struct DeltaOperationJ {
+#[serde(flatten)]
+    pub kind: OpKindJ,  //Fixme: rename label to operation later
+    #[serde(default, skip_serializing_if = "empty")]
+    pub attributes: AttributesJ,
+    }
+
+
+message FileData {
+  string name = 1;  //filename + extension
+  FileMetaData meta = 2;
+}
+
+message FilePath {
+  string path = 1;   //absolute path
+  bool is_file = 2;  //allows file and folder creation using a file path
+}
+
+
+message FolderContent {
+  repeated FileData file_list = 1;
+}
+
+/// The user is not allowed to go anywhere so we define folders (roots) to which the children are accessible
+/// The file root must be the base of any valid path when browsing the file system.
+/// For display purposes it is possible to add a tag which represents the root file path
+message FileRoot {
+  string path = 1;
+  string tag = 2;
+}
+
+message FileRoots {
+  repeated FileRoot roots = 1;
+}
+
+
+service FileBrowser {
+  rpc Content(FilePath) returns (FolderContent) {}
+  rpc Roots(google.protobuf.Empty) returns (FileRoots) {}
+
+  //rpc Create(FilePath) returns
+  //rpc Delete(FilePath) returns
+  //rpc Rename(FilePath???)
+}

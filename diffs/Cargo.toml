@@ -1,0 +1,9 @@
+[package]
+name = "diffs"
+description = "A number of diff algorithms, also called longest common subsequence."
+documentation = "https://docs.rs/diffs"
+homepage = "https://nest.pijul.com/pijul/diffs"
+version = "0.4.1"
+license = "MIT/Apache-2.0"
+authors = ["Pierre-Étienne Meunier <pe@pijul.org>"]
+include = ["Cargo.toml", "src/lib.rs", "src/replace.rs", "src/patience.rs", "src/myers.rs", "test/test.rs"]

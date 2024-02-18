@@ -1,0 +1,32 @@
+[package]
+name = "delta"
+version = "0.1.1"
+authors = ["raimond visser"]
+license = "MIT/Apache-2.0"
+keywords = ["editor", "web", "delta"]
+readme = "README.md"
+repository = "https://github.com/mundo-68/quill-delta-rs"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+path = "src/lib.rs"
+
+[profile.release]
+lto = true
+opt-level = 's'
+
+[dependencies]
+anyhow = "1.0.*"
+thiserror = "1.0.*"
+diffs = { path = "./diffs" }
+log = "0.4.*"
+serde = { version = "1.*", default-features = false, features = ["derive"], optional = true }
+serde_derive = { version = "1.*", optional = true }
+serde_json = { version = "1.*", optional = true }
+
+[features]
+default = ["json"]
+json = ["serde", "serde_json", "serde_derive"]
+
