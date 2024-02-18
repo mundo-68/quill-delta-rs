@@ -34,7 +34,7 @@ fn main() {
 
 ```
 
-# About the diffs packages
+## About the diffs packages
 The crate `diffs` was developed by Pierre-Étienne Meunier <pe@pijul.org>.
 It is published on a private repository which can be publicly accessed, but not through `Cargo`. 
 I put a copy of the `diffs` crate into this one for convenience.
