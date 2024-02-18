@@ -80,7 +80,7 @@ impl<'a> DeltaIterator<'a> {
     ///
     /// Assuming we are on an offset o in an DeltaOperation on Delta operation index i.<br>
     /// We return the remaining length of the Delta operation we point to:
-    ///     op[i].len - offset
+    ///     `op[i].len - offset`
     ///
     /// It should never return 0 if our index is being managed correctly
     ///

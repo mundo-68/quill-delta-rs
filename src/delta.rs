@@ -125,7 +125,7 @@ impl Delta {
     ///
     /// Private function to add one operation to the end of the operations vector
     ///
-    /// Performs `compaction` by composing [operation] with current tail operation
+    /// Performs `compaction` by composing `[operation]` with current tail operation
     /// of this delta, when possible.
     ///
     /// For instance, if current tail is <br>
