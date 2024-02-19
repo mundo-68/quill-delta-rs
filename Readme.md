@@ -13,6 +13,10 @@ The library provided is completely free of any formatting limitations.
 So there are no checks that the attributes provided on a `Delta operation`
 are actually valid.
 
+Documentation:
+ - User documentation: https://mundo-68.github.io/quill-delta-rs/delta/
+ - Design documentation: [ ] todo ...
+
 ## Usage
 
 ```rust
